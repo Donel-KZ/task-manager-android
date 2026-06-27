@@ -8,8 +8,6 @@ import com.example.taskmanager.screens.HomeScreen
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen(navController = rememberNavController()
-
-    )
+    val navController = rememberNavController()
 }
 

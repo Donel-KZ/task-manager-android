@@ -1,7 +1,5 @@
 package com.example.taskmanager.classes
 
-import com.example.taskmanager.screens.Priority
-
 data class Tasks(
     var id: Long,
     var title: String,

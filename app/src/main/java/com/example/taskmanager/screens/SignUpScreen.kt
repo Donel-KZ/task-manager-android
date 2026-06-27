@@ -8,11 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.rememberNavController
 
 @Composable
 fun SignUpScreen(
@@ -30,8 +27,7 @@ fun SignUpScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
-            .background( Color(0xFFFFFFFF),(RoundedCornerShape(0.dp))
-            ),
+            .background(Color.White),
         verticalArrangement = Arrangement.Center
     ) {
 
@@ -93,13 +89,13 @@ fun SignUpScreen(
 
         Button(
             onClick = {
-                if(password == confirmPassword){
+                if(password == confirmPassword && name.isNotBlank() && email.isNotBlank()){
                     onSignUpClick(
                         name,
                         email,
                         password
                     )
-                } else {
+                } else if (password != confirmPassword) {
                     passwordError = true
                 }
             },
@@ -118,4 +114,3 @@ fun SignUpScreen(
         }
     }
 }
-

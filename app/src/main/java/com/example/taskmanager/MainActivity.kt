@@ -1,17 +1,23 @@
 package com.example.taskmanager
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.annotation.RequiresApi
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 
-
-class MainActivity: ComponentActivity() {
+class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            Greeting("Android")
+            MaterialTheme {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    AppNavigation()
+                }
+            }
         }
     }
 }

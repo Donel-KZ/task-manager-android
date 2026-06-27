@@ -21,18 +21,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.taskmanager.classes.Priority
 import com.example.taskmanager.classes.Tasks
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-enum class Priority(val color: Color) {
-    LOW(Color(0xFF4CAF50)),
-    MEDIUM(Color(0xFFFFC107)),
-    HIGH(Color(0xFFF44336))
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +104,7 @@ fun AddTaskContent(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
-                    Priority.values().forEach { level ->
+                    Priority.entries.forEach { level ->
 
                         FilterChip(
                             selected = priority == level,
@@ -157,9 +151,6 @@ fun AddTaskContent(
                             priority = priority,
                             dueDate = dueDate
                         )
-
-                        task
-
 
                         onSave(task)
 
