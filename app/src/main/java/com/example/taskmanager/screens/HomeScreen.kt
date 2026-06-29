@@ -2,9 +2,14 @@
 
 package com.example.taskmanager.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
@@ -16,17 +21,31 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.taskmanager.classes.Tasks
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(tasks: SnapshotStateList<Tasks>, navController: NavController) {
+fun HomeScreen(
+    tasks: SnapshotStateList<Tasks>,
+    navController: NavController,
+    userProfilePicUri: String?,
+    onUpdateProfilePic: (Uri) -> Unit
+) {
     var showBottomSheet by remember { mutableStateOf(false) }
     var searching by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onUpdateProfilePic(it) }
+    }
 
     val filteredTasks = tasks.filter {
         it.title.contains(searchText, ignoreCase = true) ||
@@ -41,11 +60,30 @@ fun HomeScreen(tasks: SnapshotStateList<Tasks>, navController: NavController) {
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(24.dp))
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp).padding(start = 16.dp)
-                )
+                
+                Box(modifier = Modifier.padding(start = 16.dp)) {
+                    if (userProfilePicUri != null) {
+                        AsyncImage(
+                            model = userProfilePicUri,
+                            contentDescription = "Profile picture",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .clickable { photoPickerLauncher.launch("image/*") },
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Add profile picture",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clickable { photoPickerLauncher.launch("image/*") },
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 NavigationDrawerItem(
                     label = { Text("Home") },
@@ -154,34 +192,6 @@ fun HomeScreen(tasks: SnapshotStateList<Tasks>, navController: NavController) {
                     showBottomSheet = false
                 }
             )
-        }
-    }
-}
-
-@Composable
-fun TaskCard(task: Tasks) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = task.title, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = task.description)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (task.completed) "Completed" else "Pending",
-                    color = if (task.completed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
-                )
-                Text(
-                    text = "Due: ${task.dueDate}",
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
         }
     }
 }

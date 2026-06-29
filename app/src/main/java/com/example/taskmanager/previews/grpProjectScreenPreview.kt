@@ -41,6 +41,8 @@ fun GroupProjectScreenPreview() {
 
     GroupProjectScreen(
         projects = dummyProjects,
-        navController = navController
+        navController = navController,
+        userProfilePicUri = null,
+        onUpdateProfilePic = { }
     )
 }

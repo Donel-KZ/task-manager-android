@@ -16,6 +16,8 @@ fun PendingProjectPreview() {
 
     PendingScreens(
         tasks = tasks,
-        navController = rememberNavController()
+        navController = rememberNavController(),
+        userProfilePicUri = null,
+        onUpdateProfilePic = { }
     )
 }

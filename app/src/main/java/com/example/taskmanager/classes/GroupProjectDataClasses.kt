@@ -15,7 +15,8 @@ data class Member(
     val id: String,
     val name: String,
     val username: String,   // <-- needed for add-by-username
-    val role: Role
+    val role: Role,
+    val profilePictureUri: String? = null // Add profile picture URI
 )
 
 data class TaskItem(

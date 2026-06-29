@@ -3,8 +3,11 @@ package com.example.taskmanager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -55,7 +58,9 @@ fun AppNavigation() {
         )
     }
 
-    val currentUsername = "donel_dev" // Mocked logged-in user
+    // Shared user state
+    var currentUserProfilePic by remember { mutableStateOf<String?>(null) }
+    val currentUsername = "donel_dev"
 
     NavHost(
         navController = navController,
@@ -82,23 +87,49 @@ fun AppNavigation() {
         }
 
         composable("home") {
-            HomeScreen(tasks, navController)
+            HomeScreen(
+                tasks = tasks,
+                navController = navController,
+                userProfilePicUri = currentUserProfilePic,
+                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+            )
         }
 
         composable("pending") {
-            PendingScreens(tasks, navController)
+            PendingScreens(
+                tasks = tasks,
+                navController = navController,
+                userProfilePicUri = currentUserProfilePic,
+                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+            )
         }
 
         composable("finished") {
-            FinishedScreen(tasks, navController)
+            FinishedScreen(
+                tasks = tasks,
+                navController = navController,
+                userProfilePicUri = currentUserProfilePic,
+                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+            )
         }
 
         composable("group_project") {
-            GroupProjectScreen(groupProjects, navController)
+            GroupProjectScreen(
+                projects = groupProjects,
+                navController = navController,
+                currentUsername = currentUsername,
+                userProfilePicUri = currentUserProfilePic,
+                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+            )
         }
 
         composable("overdue") {
-            OverdueScreen(tasks, navController)
+            OverdueScreen(
+                tasks = tasks,
+                navController = navController,
+                userProfilePicUri = currentUserProfilePic,
+                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+            )
         }
 
         composable(

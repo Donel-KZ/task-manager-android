@@ -1,27 +1,46 @@
 package com.example.taskmanager.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.taskmanager.classes.Tasks
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FinishedScreen(tasks: List<Tasks>, navController: NavController) {
+fun FinishedScreen(
+    tasks: List<Tasks>,
+    navController: NavController,
+    userProfilePicUri: String?,
+    onUpdateProfilePic: (Uri) -> Unit
+) {
     val completedTasks = tasks.filter { it.completed }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var searching by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onUpdateProfilePic(it) }
+    }
 
     val displayedTasks = if (searching && searchText.isNotBlank()) {
         completedTasks.filter { it.title.contains(searchText, ignoreCase = true) }
@@ -34,11 +53,30 @@ fun FinishedScreen(tasks: List<Tasks>, navController: NavController) {
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(24.dp))
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp).padding(start = 16.dp)
-                )
+                
+                Box(modifier = Modifier.padding(start = 16.dp)) {
+                    if (userProfilePicUri != null) {
+                        AsyncImage(
+                            model = userProfilePicUri,
+                            contentDescription = "Profile picture",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .clickable { photoPickerLauncher.launch("image/*") },
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Add profile picture",
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clickable { photoPickerLauncher.launch("image/*") },
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 NavigationDrawerItem(
                     label = { Text("Home") },

@@ -22,8 +22,17 @@ fun LogInScreenPreview() {
 fun FinishedScreenPreview() {
     FinishedScreen(
         tasks = listOf(
-            Tasks(1, "Task 1", "Description 1", true, Priority.HIGH, "12/12/2023")
+            Tasks(
+                id = 1,
+                title = "Task 1",
+                description = "Description 1",
+                completed = true,
+                priority = Priority.HIGH,
+                dueDate = "12/12/2023"
+            )
         ),
-        navController = rememberNavController()
+        navController = rememberNavController(),
+        userProfilePicUri = null,
+        onUpdateProfilePic = { }
     )
 }
