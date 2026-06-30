@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,10 +25,12 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PendingScreens(
-    tasks: SnapshotStateList<Tasks>,
+    tasks: List<Tasks>,
     navController: NavController,
     userProfilePicUri: String?,
-    onUpdateProfilePic: (Uri) -> Unit
+    onUpdateProfilePic: (Uri) -> Unit,
+    onAddTask: (Tasks) -> Unit,
+    onToggleTask: (Tasks) -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -84,6 +85,8 @@ fun PendingScreens(
                     onClick = { scope.launch { drawerState.close() }; navController.navigate("group_project") })
                 NavigationDrawerItem(label = { Text("Overdue") }, selected = false,
                     onClick = { scope.launch { drawerState.close() }; navController.navigate("overdue") })
+                NavigationDrawerItem(label = { Text("Settings") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("settings") })
             }
         }
     ) {
@@ -136,16 +139,10 @@ fun PendingScreens(
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-                    items(filteredTasks) { task ->
-                        // BUG FIX: wired up toggle so pending tasks can be marked complete
+                    items(filteredTasks, key = { it.id }) { task ->
                         TaskCard(
                             task = task,
-                            onToggle = {
-                                val index = tasks.indexOfFirst { it.id == task.id }
-                                if (index != -1) {
-                                    tasks[index] = tasks[index].copy(completed = !tasks[index].completed)
-                                }
-                            }
+                            onToggle = { onToggleTask(task) }
                         )
                     }
                 }
@@ -158,7 +155,7 @@ fun PendingScreens(
             AddTaskContent(
                 onCancel = { showBottomSheet = false },
                 onSave = { task ->
-                    tasks.add(task.copy(id = tasks.size.toLong() + 1))
+                    onAddTask(task)
                     showBottomSheet = false
                 }
             )

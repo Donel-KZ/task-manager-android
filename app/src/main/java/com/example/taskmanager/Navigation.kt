@@ -2,73 +2,56 @@ package com.example.taskmanager
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.taskmanager.classes.*
+import com.example.taskmanager.data.AppContainer
 import com.example.taskmanager.screens.*
+import kotlinx.coroutines.launch
+import java.util.UUID
 
+// No hardcoded users, no seed data. The database starts empty; every task, project,
+// and member comes from real user input through the UI. Username/display name come
+// from whatever the person actually typed on the login/signup screen.
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(appContainer: AppContainer) {
     val navController = rememberNavController()
+    val scope = rememberCoroutineScope()
 
-    // Hoisting the state to share it across different screens
-    val tasks = remember {
-        mutableStateListOf(
-            Tasks(
-                id = 1,
-                title = "Finish Android UI",
-                description = "Create Home Screen",
-                completed = false,
-                priority = Priority.HIGH,
-                dueDate = "12/12/2024",
-            ),
-            Tasks(
-                id = 2,
-                title = "Connect Backend",
-                description = "Integrate Spring Boot API",
-                completed = false,
-                priority = Priority.MEDIUM,
-                dueDate = "15/12/2024",
-            )
-        )
-    }
+    val taskRepository = appContainer.taskRepository
+    val groupProjectRepository = appContainer.groupProjectRepository
+    val userPreferencesRepository = appContainer.userPreferencesRepository
 
-    val groupProjects = remember {
-        mutableStateListOf(
-            GroupProject(
-                id = "1",
-                title = "Project Manager App",
-                status = Status.PENDING,
-                pastDue = false,
-                dueDate = "25/12/2024",
-                members = listOf(
-                    Member("1", "Donel", "donel_dev", Role.OWNER)
-                )
-            )
-        )
-    }
+    val tasks by taskRepository.allTasks.collectAsState(initial = emptyList())
+    val groupProjects by groupProjectRepository.allProjects.collectAsState(initial = emptyList())
 
-    // Shared user state
-    var currentUserProfilePic by remember { mutableStateOf<String?>(null) }
-    val currentUsername = "donel_dev"
+    val currentUserProfilePic by userPreferencesRepository.profilePicUri.collectAsState(initial = null)
+    // currentUsername is nullable on purpose — screens that need it (Group Project)
+    // are only reachable after login, where it will always be set by then.
+    val currentUsername by userPreferencesRepository.currentUsername.collectAsState(initial = null)
+    val isLoggedIn by userPreferencesRepository.isLoggedIn.collectAsState(initial = false)
+
+    // Route the start destination based on whether a real session exists, so a
+    // returning user skips the login screen instead of re-entering credentials
+    // every launch.
+    val startDestination = if (isLoggedIn) "home" else "login"
 
     NavHost(
         navController = navController,
-        startDestination = "login"
+        startDestination = startDestination
     ) {
         composable("login") {
             LogInScreen(navController) { email, password ->
                 if (email.isNotBlank() && password.isNotBlank()) {
+                    // Username comes directly from what the person typed — no fallback identity.
+                    scope.launch {
+                        userPreferencesRepository.setSession(username = email, displayName = email)
+                    }
                     navController.navigate("home") {
                         popUpTo("login") { inclusive = true }
                     }
@@ -79,6 +62,9 @@ fun AppNavigation() {
         composable("signup") {
             SignUpScreen(navController) { name, email, password ->
                 if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
+                    scope.launch {
+                        userPreferencesRepository.setSession(username = email, displayName = name)
+                    }
                     navController.navigate("home") {
                         popUpTo("signup") { inclusive = true }
                     }
@@ -91,7 +77,11 @@ fun AppNavigation() {
                 tasks = tasks,
                 navController = navController,
                 userProfilePicUri = currentUserProfilePic,
-                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+                onUpdateProfilePic = { uri ->
+                    scope.launch { userPreferencesRepository.setProfilePicUri(uri.toString()) }
+                },
+                onAddTask = { task -> scope.launch { taskRepository.addTask(task) } },
+                onToggleTask = { task -> scope.launch { taskRepository.toggleCompleted(task) } }
             )
         }
 
@@ -100,7 +90,11 @@ fun AppNavigation() {
                 tasks = tasks,
                 navController = navController,
                 userProfilePicUri = currentUserProfilePic,
-                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+                onUpdateProfilePic = { uri ->
+                    scope.launch { userPreferencesRepository.setProfilePicUri(uri.toString()) }
+                },
+                onAddTask = { task -> scope.launch { taskRepository.addTask(task) } },
+                onToggleTask = { task -> scope.launch { taskRepository.toggleCompleted(task) } }
             )
         }
 
@@ -109,18 +103,29 @@ fun AppNavigation() {
                 tasks = tasks,
                 navController = navController,
                 userProfilePicUri = currentUserProfilePic,
-                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+                onUpdateProfilePic = { uri ->
+                    scope.launch { userPreferencesRepository.setProfilePicUri(uri.toString()) }
+                }
             )
         }
 
         composable("group_project") {
-            GroupProjectScreen(
-                projects = groupProjects,
-                navController = navController,
-                currentUsername = currentUsername,
-                userProfilePicUri = currentUserProfilePic,
-                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
-            )
+            // currentUsername is guaranteed non-null here since this screen is only
+            // reachable after a successful login/signup, but we guard anyway rather
+            // than silently substituting a placeholder.
+            val username = currentUsername
+            if (username != null) {
+                GroupProjectScreen(
+                    projects = groupProjects,
+                    navController = navController,
+                    currentUsername = username,
+                    userProfilePicUri = currentUserProfilePic,
+                    onUpdateProfilePic = { uri ->
+                        scope.launch { userPreferencesRepository.setProfilePicUri(uri.toString()) }
+                    },
+                    onCreateProject = { project -> scope.launch { groupProjectRepository.upsert(project) } }
+                )
+            }
         }
 
         composable("overdue") {
@@ -128,7 +133,24 @@ fun AppNavigation() {
                 tasks = tasks,
                 navController = navController,
                 userProfilePicUri = currentUserProfilePic,
-                onUpdateProfilePic = { currentUserProfilePic = it.toString() }
+                onUpdateProfilePic = { uri ->
+                    scope.launch { userPreferencesRepository.setProfilePicUri(uri.toString()) }
+                }
+            )
+        }
+
+        composable("settings") {
+            SettingsScreen(
+                navController = navController,
+                userPreferencesRepository = userPreferencesRepository,
+                onLogout = {
+                    scope.launch {
+                        userPreferencesRepository.clearSession()
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 
@@ -138,16 +160,14 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val projectId = backStackEntry.arguments?.getString("projectId")
             val project = groupProjects.find { it.id == projectId }
-            if (project != null) {
+            val username = currentUsername
+            if (project != null && username != null) {
                 GroupProjectDetailScreen(
                     project = project,
-                    currentUsername = currentUsername,
+                    currentUsername = username,
                     onBack = { navController.popBackStack() },
-                    onProjectUpdate = { updatedProject ->
-                        val index = groupProjects.indexOfFirst { it.id == updatedProject.id }
-                        if (index != -1) {
-                            groupProjects[index] = updatedProject
-                        }
+                    onProjectUpdate = { updated ->
+                        scope.launch { groupProjectRepository.upsert(updated) }
                     }
                 )
             }

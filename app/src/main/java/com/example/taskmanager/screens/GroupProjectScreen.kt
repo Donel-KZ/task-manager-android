@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,15 +21,20 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.taskmanager.classes.*
 import kotlinx.coroutines.launch
+import java.util.UUID
 
+// BUG FIX: currentUsername no longer defaults to "donel_dev". It's a required
+// parameter — the caller (AppNavigation) supplies whatever username is actually
+// stored in the user's session.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupProjectScreen(
-    projects: SnapshotStateList<GroupProject>,
+    projects: List<GroupProject>,
     navController: NavController,
-    currentUsername: String = "donel_dev",
+    currentUsername: String,
     userProfilePicUri: String?,
-    onUpdateProfilePic: (Uri) -> Unit
+    onUpdateProfilePic: (Uri) -> Unit,
+    onCreateProject: (GroupProject) -> Unit
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -41,9 +45,7 @@ fun GroupProjectScreen(
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onUpdateProfilePic(it) }
-    }
+    ) { uri: Uri? -> uri?.let { onUpdateProfilePic(it) } }
 
     val displayedProjects = if (searching && searchText.isNotBlank()) {
         projects.filter { it.title.contains(searchText, ignoreCase = true) }
@@ -82,45 +84,18 @@ fun GroupProjectScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                NavigationDrawerItem(
-                    label = { Text("Home") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("home")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Finished") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("finished")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Pending") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("pending")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Group Project") },
-                    selected = true,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Overdue") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("overdue")
-                    }
-                )
+                NavigationDrawerItem(label = { Text("Home") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("home") })
+                NavigationDrawerItem(label = { Text("Finished") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("finished") })
+                NavigationDrawerItem(label = { Text("Pending") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("pending") })
+                NavigationDrawerItem(label = { Text("Group Project") }, selected = true,
+                    onClick = { scope.launch { drawerState.close() } })
+                NavigationDrawerItem(label = { Text("Overdue") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("overdue") })
+                NavigationDrawerItem(label = { Text("Settings") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("settings") })
             }
         }
     ) {
@@ -141,13 +116,8 @@ fun GroupProjectScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch { drawerState.open() }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu"
-                            )
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu")
                         }
                     },
                     actions = {
@@ -179,15 +149,11 @@ fun GroupProjectScreen(
                     Text(if (searching) "No matching projects." else "No group projects.")
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.padding(padding)
-                ) {
-                    items(displayedProjects) { project ->
+                LazyColumn(modifier = Modifier.padding(padding)) {
+                    items(displayedProjects, key = { it.id }) { project ->
                         GroupProjectCard(
                             project = project,
-                            onClick = {
-                                navController.navigate("project_details/${project.id}")
-                            }
+                            onClick = { navController.navigate("project_details/${project.id}") }
                         )
                     }
                 }
@@ -200,15 +166,16 @@ fun GroupProjectScreen(
             onDismiss = { showCreateDialog = false },
             onConfirm = { title, dueDate ->
                 val newProject = GroupProject(
-                    id = java.util.UUID.randomUUID().toString(),
+                    id = UUID.randomUUID().toString(),
                     title = title,
                     status = Status.PENDING,
                     pastDue = false,
                     dueDate = dueDate,
                     members = listOf(
+                        // Owner is whoever is actually logged in — not a placeholder name.
                         Member(
-                            id = java.util.UUID.randomUUID().toString(),
-                            name = "Project Creator",
+                            id = UUID.randomUUID().toString(),
+                            name = currentUsername,
                             username = currentUsername,
                             role = Role.OWNER,
                             profilePictureUri = userProfilePicUri
@@ -216,9 +183,8 @@ fun GroupProjectScreen(
                     ),
                     deliverables = emptyList()
                 )
-                projects.add(newProject)
+                onCreateProject(newProject)
                 showCreateDialog = false
-                // Auto-navigate to details so the owner can start adding members/deliverables
                 navController.navigate("project_details/${newProject.id}")
             }
         )

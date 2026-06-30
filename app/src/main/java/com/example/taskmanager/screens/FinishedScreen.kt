@@ -38,9 +38,7 @@ fun FinishedScreen(
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onUpdateProfilePic(it) }
-    }
+    ) { uri: Uri? -> uri?.let { onUpdateProfilePic(it) } }
 
     val displayedTasks = if (searching && searchText.isNotBlank()) {
         completedTasks.filter { it.title.contains(searchText, ignoreCase = true) }
@@ -53,7 +51,6 @@ fun FinishedScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(24.dp))
-                
                 Box(modifier = Modifier.padding(start = 16.dp)) {
                     if (userProfilePicUri != null) {
                         AsyncImage(
@@ -78,43 +75,18 @@ fun FinishedScreen(
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                NavigationDrawerItem(
-                    label = { Text("Home") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("home")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Finished") },
-                    selected = true,
-                    onClick = { scope.launch { drawerState.close() } }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Pending") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("pending")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Group Project") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("group_project")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Overdue") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("overdue")
-                    }
-                )
+                NavigationDrawerItem(label = { Text("Home") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("home") })
+                NavigationDrawerItem(label = { Text("Finished") }, selected = true,
+                    onClick = { scope.launch { drawerState.close() } })
+                NavigationDrawerItem(label = { Text("Pending") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("pending") })
+                NavigationDrawerItem(label = { Text("Group Project") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("group_project") })
+                NavigationDrawerItem(label = { Text("Overdue") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("overdue") })
+                NavigationDrawerItem(label = { Text("Settings") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("settings") })
             }
         }
     ) {
@@ -162,7 +134,7 @@ fun FinishedScreen(
                 }
             } else {
                 LazyColumn(modifier = Modifier.padding(padding)) {
-                    items(displayedTasks) { task ->
+                    items(displayedTasks, key = { it.id }) { task ->
                         TaskCard(task)
                     }
                 }
