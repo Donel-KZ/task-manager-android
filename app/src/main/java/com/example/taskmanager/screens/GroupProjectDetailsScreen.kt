@@ -1,42 +1,35 @@
 package com.example.taskmanager.screens
 
-
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.taskmanager.classes.*
 import java.util.UUID
 
+// NOTE: The duplicate GroupProjectDetailScreen.kt file has been removed.
+// This is the single authoritative version.
+// BUG FIX: currentUsername is now passed down to MembersTab instead of relying
+// on the hardcoded default in MembersTab.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupProjectDetailScreen(
     project: GroupProject,
-    currentUsername: String,           // logged-in user's username
+    currentUsername: String,
     onBack: () -> Unit,
-    onProjectUpdate: (GroupProject) -> Unit  // bubble changes up to ViewModel/state
+    onProjectUpdate: (GroupProject) -> Unit
 ) {
     var localProject by remember { mutableStateOf(project) }
     val isOwner = localProject.members.any {
         it.username == currentUsername && it.role == Role.OWNER
     }
 
-    // Tab state
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Deliverables", "Members")
 
-    // Dialog visibility
     var showAddMemberDialog by remember { mutableStateOf(false) }
     var showCreateDeliverableDialog by remember { mutableStateOf(false) }
 
@@ -55,7 +48,6 @@ fun GroupProjectDetailScreen(
                     }
                 },
                 actions = {
-                    // Owner-only: add member button
                     if (isOwner) {
                         IconButton(onClick = { showAddMemberDialog = true }) {
                             Icon(Icons.Default.PersonAdd, contentDescription = "Add Member")
@@ -65,7 +57,6 @@ fun GroupProjectDetailScreen(
             )
         },
         floatingActionButton = {
-            // Only show FAB on Deliverables tab
             if (selectedTab == 0) {
                 FloatingActionButton(onClick = { showCreateDeliverableDialog = true }) {
                     Icon(Icons.Default.Add, contentDescription = "Create Deliverable")
@@ -73,10 +64,7 @@ fun GroupProjectDetailScreen(
             }
         }
     ) { padding ->
-
         Column(modifier = Modifier.padding(padding)) {
-
-            // Past due banner or Due Date info
             if (localProject.pastDue) {
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -98,7 +86,6 @@ fun GroupProjectDetailScreen(
                 )
             }
 
-            // Tabs
             TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -110,28 +97,25 @@ fun GroupProjectDetailScreen(
             }
 
             when (selectedTab) {
-                0 -> DeliverablesTab(
-                    project = localProject,
-                    onProjectUpdate = ::update
-                )
+                0 -> DeliverablesTab(project = localProject, onProjectUpdate = ::update)
+                // BUG FIX: currentUsername now passed to MembersTab
                 1 -> MembersTab(
                     project = localProject,
                     isOwner = isOwner,
+                    currentUsername = currentUsername,
                     onProjectUpdate = ::update
                 )
             }
         }
     }
 
-    // Dialogs
     if (showAddMemberDialog) {
         AddMemberDialog(
             onDismiss = { showAddMemberDialog = false },
             onConfirm = { username ->
-                // In real app this would call API to look up user by username
                 val newMember = Member(
                     id = UUID.randomUUID().toString(),
-                    name = username,      // real app would return full name from API
+                    name = username,
                     username = username,
                     role = Role.MEMBER
                 )

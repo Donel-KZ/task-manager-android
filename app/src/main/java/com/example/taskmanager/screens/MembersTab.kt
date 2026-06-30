@@ -4,27 +4,14 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.PersonRemove
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,12 +24,15 @@ import com.example.taskmanager.classes.GroupProject
 import com.example.taskmanager.classes.Member
 import com.example.taskmanager.classes.Role
 
+// BUG FIX: currentUsername no longer has a hardcoded default ("donel_dev").
+// It must be passed from GroupProjectDetailScreen which gets it from AppNavigation.
+// Hardcoding it meant any user other than "donel_dev" would never match isCurrentUser.
 @Composable
 fun MembersTab(
     project: GroupProject,
     isOwner: Boolean,
-    onProjectUpdate: (GroupProject) -> Unit,
-    currentUsername: String = "donel_dev"
+    currentUsername: String,          // no default — must be passed explicitly
+    onProjectUpdate: (GroupProject) -> Unit
 ) {
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
@@ -82,9 +72,7 @@ fun MemberRow(
 ) {
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onUpdateProfilePicture(it) }
-    }
+    ) { uri: Uri? -> uri?.let { onUpdateProfilePicture(it) } }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -98,9 +86,7 @@ fun MemberRow(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .clickable(enabled = isCurrentUser) {
-                            photoPickerLauncher.launch("image/*")
-                        },
+                        .clickable(enabled = isCurrentUser) { photoPickerLauncher.launch("image/*") },
                     contentScale = ContentScale.Crop
                 )
             } else {
@@ -109,14 +95,13 @@ fun MemberRow(
                     contentDescription = "Default profile picture",
                     modifier = Modifier
                         .size(40.dp)
-                        .clickable(enabled = isCurrentUser) {
-                            photoPickerLauncher.launch("image/*")
-                        },
+                        .clickable(enabled = isCurrentUser) { photoPickerLauncher.launch("image/*") },
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = member.name,
@@ -129,10 +114,9 @@ fun MemberRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            AssistChip(
-                onClick = {},
-                label = { Text(member.role.name) }
-            )
+
+            AssistChip(onClick = {}, label = { Text(member.role.name) })
+
             if (isOwner && member.role != Role.OWNER) {
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(onClick = onRemove) {
@@ -146,3 +130,4 @@ fun MemberRow(
         }
     }
 }
+

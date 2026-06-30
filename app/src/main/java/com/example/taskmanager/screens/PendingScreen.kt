@@ -39,15 +39,14 @@ fun PendingScreens(
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onUpdateProfilePic(it) }
-    }
+    ) { uri: Uri? -> uri?.let { onUpdateProfilePic(it) } }
 
     val filteredTasks = tasks.filter {
         !it.completed && (
-                it.title.contains(searchText, ignoreCase = true) ||
-                it.description.contains(searchText, ignoreCase = true)
-        )
+                searchText.isBlank() ||
+                        it.title.contains(searchText, ignoreCase = true) ||
+                        it.description.contains(searchText, ignoreCase = true)
+                )
     }
 
     ModalNavigationDrawer(
@@ -55,15 +54,12 @@ fun PendingScreens(
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(24.dp))
-                
                 Box(modifier = Modifier.padding(start = 16.dp)) {
                     if (userProfilePicUri != null) {
                         AsyncImage(
                             model = userProfilePicUri,
                             contentDescription = "Profile picture",
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
+                            modifier = Modifier.size(80.dp).clip(CircleShape)
                                 .clickable { photoPickerLauncher.launch("image/*") },
                             contentScale = ContentScale.Crop
                         )
@@ -71,52 +67,23 @@ fun PendingScreens(
                         Icon(
                             imageVector = Icons.Default.AccountCircle,
                             contentDescription = "Add profile picture",
-                            modifier = Modifier
-                                .size(80.dp)
+                            modifier = Modifier.size(80.dp)
                                 .clickable { photoPickerLauncher.launch("image/*") },
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
-                NavigationDrawerItem(
-                    label = { Text("Home") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("home")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Finished") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("finished")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Pending") },
-                    selected = true,
-                    onClick = { scope.launch { drawerState.close() } }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Group Project") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("group_project")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Overdue") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("overdue")
-                    }
-                )
+                NavigationDrawerItem(label = { Text("Home") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("home") })
+                NavigationDrawerItem(label = { Text("Finished") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("finished") })
+                NavigationDrawerItem(label = { Text("Pending") }, selected = true,
+                    onClick = { scope.launch { drawerState.close() } })
+                NavigationDrawerItem(label = { Text("Group Project") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("group_project") })
+                NavigationDrawerItem(label = { Text("Overdue") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("overdue") })
             }
         }
     ) {
@@ -138,7 +105,7 @@ fun PendingScreens(
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
                         }
                     },
                     actions = {
@@ -156,7 +123,7 @@ fun PendingScreens(
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = { showBottomSheet = true }) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Task")
+                    Icon(Icons.Default.Add, contentDescription = "Add Task")
                 }
             }
         ) { padding ->
@@ -165,12 +132,21 @@ fun PendingScreens(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(if (searching) "No matching tasks found" else "No pending tasks found")
+                    Text(if (searching) "No matching tasks." else "No pending tasks.")
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                     items(filteredTasks) { task ->
-                        TaskCard(task)
+                        // BUG FIX: wired up toggle so pending tasks can be marked complete
+                        TaskCard(
+                            task = task,
+                            onToggle = {
+                                val index = tasks.indexOfFirst { it.id == task.id }
+                                if (index != -1) {
+                                    tasks[index] = tasks[index].copy(completed = !tasks[index].completed)
+                                }
+                            }
+                        )
                     }
                 }
             }

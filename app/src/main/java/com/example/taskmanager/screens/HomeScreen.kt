@@ -2,6 +2,7 @@
 
 package com.example.taskmanager.screens
 
+
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,11 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -43,13 +40,16 @@ fun HomeScreen(
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { onUpdateProfilePic(it) }
-    }
+    ) { uri: Uri? -> uri?.let { onUpdateProfilePic(it) } }
 
-    val filteredTasks = tasks.filter {
-        it.title.contains(searchText, ignoreCase = true) ||
-                it.description.contains(searchText, ignoreCase = true)
+    // BUG FIX: filter is applied to all tasks for display
+    val filteredTasks = if (searching && searchText.isNotBlank()) {
+        tasks.filter {
+            it.title.contains(searchText, ignoreCase = true) ||
+                    it.description.contains(searchText, ignoreCase = true)
+        }
+    } else {
+        tasks.toList()
     }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -60,7 +60,6 @@ fun HomeScreen(
         drawerContent = {
             ModalDrawerSheet {
                 Spacer(modifier = Modifier.height(24.dp))
-                
                 Box(modifier = Modifier.padding(start = 16.dp)) {
                     if (userProfilePicUri != null) {
                         AsyncImage(
@@ -83,45 +82,17 @@ fun HomeScreen(
                         )
                     }
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
-                NavigationDrawerItem(
-                    label = { Text("Home") },
-                    selected = true,
-                    onClick = { scope.launch { drawerState.close() } }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Finished") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("finished")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Pending") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("pending")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Group Project") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("group_project")
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Overdue") },
-                    selected = false,
-                    onClick = {
-                        scope.launch { drawerState.close() }
-                        navController.navigate("overdue")
-                    }
-                )
+                NavigationDrawerItem(label = { Text("Home") }, selected = true,
+                    onClick = { scope.launch { drawerState.close() } })
+                NavigationDrawerItem(label = { Text("Finished") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("finished") })
+                NavigationDrawerItem(label = { Text("Pending") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("pending") })
+                NavigationDrawerItem(label = { Text("Group Project") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("group_project") })
+                NavigationDrawerItem(label = { Text("Overdue") }, selected = false,
+                    onClick = { scope.launch { drawerState.close() }; navController.navigate("overdue") })
             }
         }
     ) {
@@ -143,7 +114,7 @@ fun HomeScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(imageVector = Icons.Default.Menu, contentDescription = "Menu")
+                            Icon(Icons.Default.Menu, contentDescription = "Menu")
                         }
                     },
                     actions = {
@@ -161,28 +132,41 @@ fun HomeScreen(
             },
             floatingActionButton = {
                 FloatingActionButton(onClick = { showBottomSheet = true }) {
-                    Icon(imageVector = Icons.Default.Add, contentDescription = "Add Task")
+                    Icon(Icons.Default.Add, contentDescription = "Add Task")
                 }
             }
         ) { padding ->
-            if (tasks.isEmpty()) {
+            // BUG FIX: was checking tasks.isEmpty() which ignores search filter;
+            // now correctly checks filteredTasks and shows appropriate message
+            if (filteredTasks.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "Hello user,\nWould you like to add a task?")
+                    Text(
+                        if (searching) "No matching tasks."
+                        else "No tasks yet. Tap + to add one."
+                    )
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding)
-                ) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
                     items(filteredTasks) { task ->
-                        TaskCard(task)
+                        // BUG FIX: wired up onToggle so tasks can be completed from HomeScreen
+                        TaskCard(
+                            task = task,
+                            onToggle = {
+                                val index = tasks.indexOfFirst { it.id == task.id }
+                                if (index != -1) {
+                                    tasks[index] = tasks[index].copy(completed = !tasks[index].completed)
+                                }
+                            }
+                        )
                     }
                 }
             }
         }
     }
+
     if (showBottomSheet) {
         ModalBottomSheet(onDismissRequest = { showBottomSheet = false }) {
             AddTaskContent(

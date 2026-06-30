@@ -1,36 +1,36 @@
 package com.example.taskmanager.screens
 
-import androidx.compose.foundation.background
+
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
+// BUG FIX: replaced remember with rememberSaveable for all fields so state
+// is not lost on screen rotation or configuration changes.
+// Also removed hardcoded background Color.White — now uses MaterialTheme surface
+// so it correctly adapts to light/dark mode.
 @Composable
 fun SignUpScreen(
     navController: NavController,
     onSignUpClick: (String, String, String) -> Unit
 ) {
-
-    var name by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var passwordError by remember { mutableStateOf(false) }
+    var name by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+    var passwordError by rememberSaveable { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
-            .background(Color.White),
+            .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-
         Text(
             text = "Create Account",
             style = MaterialTheme.typography.headlineMedium
@@ -58,7 +58,11 @@ fun SignUpScreen(
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                // Live re-check so error clears as the user types to match
+                if (confirmPassword.isNotBlank()) passwordError = confirmPassword != it
+            },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
@@ -75,42 +79,32 @@ fun SignUpScreen(
             label = { Text("Confirm Password") },
             visualTransformation = PasswordVisualTransformation(),
             isError = passwordError,
+            supportingText = {
+                if (passwordError) Text("Passwords do not match")
+            },
             modifier = Modifier.fillMaxWidth()
         )
-
-        if (passwordError) {
-            Text(
-                text = "Passwords do not match",
-                color = MaterialTheme.colorScheme.error
-            )
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
             onClick = {
-                if(password == confirmPassword && name.isNotBlank() && email.isNotBlank()){
-                    onSignUpClick(
-                        name,
-                        email,
-                        password
-                    )
-                } else if (password != confirmPassword) {
+                if (password == confirmPassword && name.isNotBlank() && email.isNotBlank()) {
+                    onSignUpClick(name, email, password)
+                } else {
                     passwordError = true
                 }
             },
+            enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && !passwordError,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Sign Up")
         }
 
-
         TextButton(
-            onClick = {
-                navController.navigate("login")
-            }
+            onClick = { navController.navigate("login") }
         ) {
-            Text("Already have an account? Login")
+            Text("Already have an account? Log In")
         }
     }
 }
