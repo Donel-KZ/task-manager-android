@@ -16,9 +16,15 @@ interface GroupProjectDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(project: GroupProjectEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(projects: List<GroupProjectEntity>)
+
     @Update
     suspend fun update(project: GroupProjectEntity)
 
     @Delete
     suspend fun delete(project: GroupProjectEntity)
+
+    @Query("DELETE FROM group_projects")
+    suspend fun deleteAll()
 }

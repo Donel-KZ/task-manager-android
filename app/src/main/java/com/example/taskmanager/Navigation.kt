@@ -12,7 +12,6 @@ import com.example.taskmanager.classes.*
 import com.example.taskmanager.data.AppContainer
 import com.example.taskmanager.screens.*
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 // No hardcoded users, no seed data. The database starts empty; every task, project,
 // and member comes from real user input through the UI. Username/display name come
@@ -25,6 +24,7 @@ fun AppNavigation(appContainer: AppContainer) {
 
     val taskRepository = appContainer.taskRepository
     val groupProjectRepository = appContainer.groupProjectRepository
+    val authRepository = appContainer.authRepository
     val userPreferencesRepository = appContainer.userPreferencesRepository
 
     val tasks by taskRepository.allTasks.collectAsState(initial = emptyList())
@@ -46,27 +46,60 @@ fun AppNavigation(appContainer: AppContainer) {
         startDestination = startDestination
     ) {
         composable("login") {
-            LogInScreen(navController) { email, password ->
+            var authError by remember { mutableStateOf<String?>(null) }
+            var authLoading by remember { mutableStateOf(false) }
+
+            LogInScreen(
+                navController = navController,
+                isLoading = authLoading,
+                errorMessage = authError
+            ) { email, password ->
                 if (email.isNotBlank() && password.isNotBlank()) {
-                    // Username comes directly from what the person typed — no fallback identity.
                     scope.launch {
-                        userPreferencesRepository.setSession(username = email, displayName = email)
-                    }
-                    navController.navigate("home") {
-                        popUpTo("login") { inclusive = true }
+                        authLoading = true
+                        authError = null
+                        runCatching {
+                            authRepository.login(email, password)
+                            taskRepository.syncFromBackend()
+                            groupProjectRepository.syncFromBackend()
+                        }.onSuccess {
+                            navController.navigate("home") {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        }.onFailure { throwable ->
+                            authError = throwable.message ?: "Unable to log in."
+                        }
+                        authLoading = false
                     }
                 }
             }
         }
 
         composable("signup") {
-            SignUpScreen(navController) { name, email, password ->
+            var authError by remember { mutableStateOf<String?>(null) }
+            var authLoading by remember { mutableStateOf(false) }
+
+            SignUpScreen(
+                navController = navController,
+                isLoading = authLoading,
+                errorMessage = authError
+            ) { name, email, password ->
                 if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank()) {
                     scope.launch {
-                        userPreferencesRepository.setSession(username = email, displayName = name)
-                    }
-                    navController.navigate("home") {
-                        popUpTo("signup") { inclusive = true }
+                        authLoading = true
+                        authError = null
+                        runCatching {
+                            authRepository.register(name, email, password)
+                            taskRepository.syncFromBackend()
+                            groupProjectRepository.syncFromBackend()
+                        }.onSuccess {
+                            navController.navigate("home") {
+                                popUpTo("signup") { inclusive = true }
+                            }
+                        }.onFailure { throwable ->
+                            authError = throwable.message ?: "Unable to create account."
+                        }
+                        authLoading = false
                     }
                 }
             }
@@ -123,7 +156,7 @@ fun AppNavigation(appContainer: AppContainer) {
                     onUpdateProfilePic = { uri ->
                         scope.launch { userPreferencesRepository.setProfilePicUri(uri.toString()) }
                     },
-                    onCreateProject = { project -> scope.launch { groupProjectRepository.upsert(project) } }
+                    onCreateProject = { project -> groupProjectRepository.upsert(project) }
                 )
             }
         }

@@ -34,7 +34,7 @@ fun GroupProjectScreen(
     currentUsername: String,
     userProfilePicUri: String?,
     onUpdateProfilePic: (Uri) -> Unit,
-    onCreateProject: (GroupProject) -> Unit
+    onCreateProject: suspend (GroupProject) -> GroupProject
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -183,9 +183,11 @@ fun GroupProjectScreen(
                     ),
                     deliverables = emptyList()
                 )
-                onCreateProject(newProject)
-                showCreateDialog = false
-                navController.navigate("project_details/${newProject.id}")
+                scope.launch {
+                    val savedProject = onCreateProject(newProject)
+                    showCreateDialog = false
+                    navController.navigate("project_details/${savedProject.id}")
+                }
             }
         )
     }

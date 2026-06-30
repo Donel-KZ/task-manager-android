@@ -27,6 +27,8 @@ import androidx.compose.runtime.setValue
 
 @Composable
 fun LogInScreen(navController: NavController,
+                isLoading: Boolean = false,
+                errorMessage: String? = null,
                 onLogInClick: (String, String) -> Unit
 ) {
     // Use rememberSaveable to survive configuration changes like rotation
@@ -62,17 +64,27 @@ fun LogInScreen(navController: NavController,
             onClick = {
                 onLogInClick(email, password)
             },
+            enabled = !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Log In")
+            Text(if (isLoading) "Logging in..." else "Log In")
+        }
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
         TextButton(
             onClick = {
                 navController.navigate("signup")
-            }
+            },
+            enabled = !isLoading
         ) {
             Text("Don't have an account? Sign Up")
         }
     }
+
 
     }

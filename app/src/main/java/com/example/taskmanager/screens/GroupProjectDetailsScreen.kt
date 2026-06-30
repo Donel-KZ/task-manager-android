@@ -23,6 +23,9 @@ fun GroupProjectDetailScreen(
     onProjectUpdate: (GroupProject) -> Unit
 ) {
     var localProject by remember { mutableStateOf(project) }
+    LaunchedEffect(project) {
+        localProject = project
+    }
     val isOwner = localProject.members.any {
         it.username == currentUsername && it.role == Role.OWNER
     }

@@ -18,6 +18,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        val taskManagerApiBaseUrl = providers.gradleProperty("TASK_MANAGER_API_BASE_URL")
+            .orElse("http://10.0.2.2:8080/")
+            .get()
+        buildConfigField("String", "TASK_MANAGER_API_BASE_URL", "\"$taskManagerApiBaseUrl\"")
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -41,6 +45,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -74,6 +79,9 @@ dependencies {
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization.converter)
+    implementation(libs.okhttp)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

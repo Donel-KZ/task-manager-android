@@ -12,7 +12,7 @@ import com.example.taskmanager.data.local.entity.TaskEntity
 
 @Database(
     entities = [TaskEntity::class, GroupProjectEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -13,7 +13,8 @@ data class TaskEntity(
     val description: String,
     val completed: Boolean,
     val priority: Priority,
-    val dueDate: String
+    val dueDate: String,
+    val remoteId: Long? = null
 )
 
 // Mappers between the Room entity and the existing UI model (Tasks),
@@ -24,7 +25,8 @@ fun TaskEntity.toTasks(): Tasks = Tasks(
     description = description,
     completed = completed,
     priority = priority,
-    dueDate = dueDate
+    dueDate = dueDate,
+    remoteId = remoteId
 )
 
 fun Tasks.toEntity(): TaskEntity = TaskEntity(
@@ -33,5 +35,6 @@ fun Tasks.toEntity(): TaskEntity = TaskEntity(
     description = description,
     completed = completed,
     priority = priority,
-    dueDate = dueDate
+    dueDate = dueDate,
+    remoteId = remoteId
 )

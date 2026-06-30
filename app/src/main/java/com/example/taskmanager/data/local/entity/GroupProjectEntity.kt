@@ -21,5 +21,6 @@ data class GroupProjectEntity(
     val pastDue: Boolean,
     val dueDate: String,
     val membersJson: String,       // serialized List<Member>
-    val deliverablesJson: String   // serialized List<Deliverable>
+    val deliverablesJson: String,  // serialized List<Deliverable>
+    val remoteId: Long? = null
 )

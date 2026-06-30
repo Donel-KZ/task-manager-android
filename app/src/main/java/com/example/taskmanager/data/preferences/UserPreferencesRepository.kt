@@ -3,6 +3,7 @@ package com.example.taskmanager.data.preferences
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -24,6 +25,8 @@ class UserPreferencesRepository(private val context: Context) {
         val CURRENT_USERNAME = stringPreferencesKey("current_username")
         val DISPLAY_NAME = stringPreferencesKey("display_name")
         val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+        val ACCESS_TOKEN = stringPreferencesKey("access_token")
+        val USER_ID = longPreferencesKey("user_id")
     }
 
     // Emits the saved theme mode, defaulting to SYSTEM if never set.
@@ -64,11 +67,28 @@ class UserPreferencesRepository(private val context: Context) {
         prefs[Keys.IS_LOGGED_IN] ?: false
     }
 
-    suspend fun setSession(username: String, displayName: String) {
+    val accessToken: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[Keys.ACCESS_TOKEN]
+    }
+
+    val currentUserId: Flow<Long?> = context.dataStore.data.map { prefs ->
+        prefs[Keys.USER_ID]
+    }
+
+    suspend fun setSession(
+        username: String,
+        displayName: String,
+        accessToken: String? = null,
+        userId: Long? = null
+    ) {
         context.dataStore.edit { prefs ->
             prefs[Keys.CURRENT_USERNAME] = username
             prefs[Keys.DISPLAY_NAME] = displayName
             prefs[Keys.IS_LOGGED_IN] = true
+            if (accessToken != null) prefs[Keys.ACCESS_TOKEN] = accessToken
+            else prefs.remove(Keys.ACCESS_TOKEN)
+            if (userId != null) prefs[Keys.USER_ID] = userId
+            else prefs.remove(Keys.USER_ID)
         }
     }
 
@@ -76,6 +96,8 @@ class UserPreferencesRepository(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs.remove(Keys.CURRENT_USERNAME)
             prefs.remove(Keys.DISPLAY_NAME)
+            prefs.remove(Keys.ACCESS_TOKEN)
+            prefs.remove(Keys.USER_ID)
             prefs[Keys.IS_LOGGED_IN] = false
         }
     }

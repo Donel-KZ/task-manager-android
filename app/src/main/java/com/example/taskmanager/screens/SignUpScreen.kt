@@ -16,6 +16,8 @@ import androidx.navigation.NavController
 @Composable
 fun SignUpScreen(
     navController: NavController,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
     onSignUpClick: (String, String, String) -> Unit
 ) {
     var name by rememberSaveable { mutableStateOf("") }
@@ -94,14 +96,24 @@ fun SignUpScreen(
                     passwordError = true
                 }
             },
-            enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && !passwordError,
+            enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank() && !passwordError && !isLoading,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Sign Up")
+            Text(if (isLoading) "Creating account..." else "Sign Up")
+        }
+
+        if (errorMessage != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         TextButton(
-            onClick = { navController.navigate("login") }
+            onClick = { navController.navigate("login") },
+            enabled = !isLoading
         ) {
             Text("Already have an account? Log In")
         }

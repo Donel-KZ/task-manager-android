@@ -6,5 +6,6 @@ data class Tasks(
     var description: String,
     var completed: Boolean,
     var priority: Priority,
-    var dueDate: String
+    var dueDate: String,
+    var remoteId: Long? = null
 )
