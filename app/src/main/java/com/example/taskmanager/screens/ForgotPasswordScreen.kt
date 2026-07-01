@@ -17,55 +17,52 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
-
 @Composable
-fun LogInScreen(navController: NavController,
-                isLoading: Boolean = false,
-                errorMessage: String? = null,
-                onLogInClick: (String, String) -> Unit
+fun ForgotPasswordScreen(
+    navController: NavController,
+    isLoading: Boolean = false,
+    errorMessage: String? = null,
+    successMessage: String? = null,
+    onSendResetLink: (String) -> Unit
 ) {
-    // Use rememberSaveable to survive configuration changes like rotation
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        // Centers content vertically and adds 16dp spacing between every child
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
     ) {
         Text(
-            text = "Log In"
-            , style = MaterialTheme.typography.headlineMedium
-
+            text = "Forgot Password",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Text(
+            text = "Enter your email address and we'll send you a link to reset your password.",
+            style = MaterialTheme.typography.bodyMedium
         )
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email/Username") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            singleLine = true,
+            enabled = !isLoading
         )
         Button(
-            onClick = {
-                onLogInClick(email, password)
-            },
-            enabled = !isLoading,
+            onClick = { onSendResetLink(email) },
+            enabled = !isLoading && email.isNotBlank(),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(if (isLoading) "Logging in..." else "Log In")
+            Text(if (isLoading) "Sending..." else "Send Reset Link")
         }
+
         if (errorMessage != null) {
             Text(
                 text = errorMessage,
@@ -74,24 +71,19 @@ fun LogInScreen(navController: NavController,
             )
         }
 
-        TextButton(
-            onClick = {
-                navController.navigate("forgot_password")
-            },
-            enabled = !isLoading
-        ) {
-            Text("Forgot Password?")
+        if (successMessage != null) {
+            Text(
+                text = successMessage,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         TextButton(
-            onClick = {
-                navController.navigate("signup")
-            },
+            onClick = { navController.popBackStack() },
             enabled = !isLoading
         ) {
-            Text("Don't have an account? Sign Up")
+            Text("Back to Log In")
         }
     }
-
-
-    }
+}

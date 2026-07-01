@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.example.taskmanager.classes.*
 import com.example.taskmanager.data.AppContainer
 import com.example.taskmanager.screens.*
@@ -101,6 +102,65 @@ fun AppNavigation(appContainer: AppContainer) {
                         }
                         authLoading = false
                     }
+                }
+            }
+        }
+
+        composable("forgot_password") {
+            var authError by remember { mutableStateOf<String?>(null) }
+            var authLoading by remember { mutableStateOf(false) }
+            var successMessage by remember { mutableStateOf<String?>(null) }
+
+            ForgotPasswordScreen(
+                navController = navController,
+                isLoading = authLoading,
+                errorMessage = authError,
+                successMessage = successMessage
+            ) { email ->
+                scope.launch {
+                    authLoading = true
+                    authError = null
+                    successMessage = null
+                    runCatching {
+                        authRepository.forgotPassword(email)
+                    }.onSuccess {
+                        successMessage = it
+                    }.onFailure { throwable ->
+                        authError = throwable.message ?: "Failed to send reset link."
+                    }
+                    authLoading = false
+                }
+            }
+        }
+
+        composable(
+            route = "reset_password?token={token}",
+            arguments = listOf(navArgument("token") { type = NavType.StringType; defaultValue = "" }),
+            deepLinks = listOf(navDeepLink { uriPattern = "taskmanager://reset-password?token={token}" })
+        ) { backStackEntry ->
+            val token = backStackEntry.arguments?.getString("token") ?: ""
+            var authError by remember { mutableStateOf<String?>(null) }
+            var authLoading by remember { mutableStateOf(false) }
+
+            ResetPasswordScreen(
+                navController = navController,
+                token = token,
+                isLoading = authLoading,
+                errorMessage = authError
+            ) { resetToken, newPassword ->
+                scope.launch {
+                    authLoading = true
+                    authError = null
+                    runCatching {
+                        authRepository.resetPassword(resetToken, newPassword)
+                    }.onSuccess {
+                        navController.navigate("login") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }.onFailure { throwable ->
+                        authError = throwable.message ?: "Failed to reset password."
+                    }
+                    authLoading = false
                 }
             }
         }

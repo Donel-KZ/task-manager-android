@@ -19,7 +19,7 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         val taskManagerApiBaseUrl = providers.gradleProperty("TASK_MANAGER_API_BASE_URL")
-            .orElse("http://10.0.2.2:8080/")
+            .orElse("https://task-manager-production-7b2f.up.railway.app/")
             .get()
         buildConfigField("String", "TASK_MANAGER_API_BASE_URL", "\"$taskManagerApiBaseUrl\"")
         vectorDrawables {

@@ -22,6 +22,28 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+@Serializable
+data class ResetPasswordRequest(
+    val token: String,
+    val password: String
+)
+
+@Serializable
+data class MessageResponse(
+    val message: String
+)
+
+@Serializable
+data class ApiErrorResponse(
+    val message: String? = null,
+    val errors: Map<String, String> = emptyMap()
+)
+
+@Serializable
 data class AuthResponse(
     val tokenType: String,
     val accessToken: String,
@@ -151,6 +173,12 @@ interface TaskManagerApi {
 
     @POST("api/auth/register")
     suspend fun register(@Body request: RegisterRequest): AuthResponse
+
+    @POST("api/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): MessageResponse
+
+    @POST("api/auth/reset-password")
+    suspend fun resetPassword(@Body request: ResetPasswordRequest): MessageResponse
 
     @GET("api/users")
     suspend fun getUsers(): List<UserResponse>
